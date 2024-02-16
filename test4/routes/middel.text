@@ -1,0 +1,111 @@
+anmol
+<?php
+ 
+use Illuminate\Support\Facades\Route;
+ 
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
+Route::get('/', function () {
+    return view('welcome');
+});
+Auth::routes([
+    "verify"=>true
+]);
+Route::middleware(["user-check","verified"])->group(function(){
+    Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+    Route::middleware(["admin-check"])->group(function(){
+        Route::get('/adminpage', [App\Http\Controllers\AdminController::class, 'index'])->name('adminpage');
+        Route::get('/add/subadmin', [App\Http\Controllers\AdminController::class, 'addSubAdmin']);        
+        Route::post('/submitdetails/subadmin', [App\Http\Controllers\AdminController::class, 'addSubAdminDetails']);
+        Route::post("changestatus/subadmin/{user}",[App\Http\Controllers\AdminController::class, 'changeSubAdminStatus']);
+    });
+    Route::middleware(["subadmin-check"])->group(function(){
+        Route::get('/subadminpage', [App\Http\Controllers\SubAdminController::class, 'index'])->name('subadminpage');
+        Route::get('/add/user', [App\Http\Controllers\SubAdminController::class, 'addUser']);  
+        Route::post('/submitdetails/user', [App\Http\Controllers\SubAdminController::class, 'addUserDetails']);
+        Route::post("changestatus/user/{user}",[App\Http\Controllers\SubAdminController::class, 'changeUserStatus']);
+    });
+    Route::get('/userpage', [App\Http\Controllers\UserController::class, 'index'])->name('userpage');
+});
+
+ 
+
+ define middleware
+ [8:13 PM] Sachin Gupta
+<?php
+namespace App\Http\Middleware;
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
+class SubAdminMiddleware
+{
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     */
+    public function handle(Request $request, Closure $next): Response
+    {
+        $user = auth()->user();
+        $userrole = $user->role;
+        if ($userrole == 'subadmin') {
+            return $next($request);
+        } else {
+            Auth::logout();
+            $message = 'You are not subadmin please contact the administrator';
+            return redirect()->route('login')->with('message', $message);
+        }
+    }
+}
+
+ 
+
+ rana 
+ Update or insert user details
+
+    public function updateInsert(Request $request, User $id)
+
+    {
+
+        $matchThese = ['id' => $id->id];
+
+        $request->validate([
+            'UserName' => 'required|regex:/^[A-Za-z\s]+$/',
+            // 'phone' => 'required|min:10|numeric',
+            'phone' => 'required|numeric|digits_between:10,14',
+            'address' => 'required|string',
+            // 'profile_name' => 'required|image',
+            'profile_pic' => 'file|mimes:jpeg,png,jpg,gif|max:2048',
+            // 'user_id' => 'required|exists:users,id',
+        ], [
+            'UserName.regex' => 'The name field should contain only characters and spaces.',
+             'phone.required' => 'The phone field is required.',
+            'phone.numeric' => 'The phone field should contain only numbers.',
+            'phone.min' => 'The phone number must be at least :min digits.',
+            'phone.max' => 'The phone number cannot be longer than :max digits.',
+            'address.string' => 'The address should be a valid string.',
+            // 'profile_name.image' => 'The profile name should be an image.',
+            // 'profile_pic.image' => 'The profile picture should be an image.',
+            'profile_pic.mimes' => 'The profile picture must be in jpeg, png, jpg, or gif format.',
+            'profile_pic.max' => 'The profile picture should not exceed :max kilobytes.',
+            'user_id.exists' => 'The user ID does not exist in the database.',
+        ]);
+    }
+
+sir 
+
+
+<a href="{{ route('view.blade', ['type' => 'subadmin'])}}">Add Subadmin</a>
+    <a href="{{ route('view.blade', ['type' => 'manager'])}}">Subadmin</a>
+    <a href="{{ route('view.blade', ['type' => 'user'])}}">Subadmin</a>
+    <form action="{{ route('demo', ['type' => request()->type ])}}" method="post">
+    </form>
